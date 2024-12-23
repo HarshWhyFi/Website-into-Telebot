@@ -1,0 +1,68 @@
+import telebot
+from telebot import types
+from pyfiglet import Figlet
+import json
+
+# Initialize the bot
+token = input("Enter your BOT TOKEN ➼ ")
+bot = telebot.TeleBot(token)
+
+# Create ASCII logo
+fig = Figlet(font='slant')
+logo = fig.renderText('HARSH')
+print(logo)
+print("This tool is developed by @YourUsername")
+
+# Store user interactions (for example purposes, using a simple JSON file)
+INTERACTED_USERS_FILE = 'interacted_users.json'
+
+def load_interacted_users():
+    try:
+        with open(INTERACTED_USERS_FILE, 'r') as file:
+            return json.load(file)
+    except FileNotFoundError:
+        return {}
+
+def save_interacted_user(user_id):
+    interacted_users = load_interacted_users()
+    interacted_users[user_id] = True
+    with open(INTERACTED_USERS_FILE, 'w') as file:
+        json.dump(interacted_users, file)
+
+# Command handler for /start
+@bot.message_handler(commands=['start'])
+def send_welcome(message):
+    user_id = message.chat.id
+    interacted_users = load_interacted_users()
+
+    if user_id in interacted_users:
+        bot.send_message(user_id, "You have already interacted with the bot.")
+        return  # Skip sending the message again if already interacted
+
+    # Create an inline keyboard with a button that links to the web app
+    keyboard = types.InlineKeyboardMarkup()
+    web_app_url = 'https://yourwebapp.com'
+    web_app = telebot.types.WebAppInfo(url=web_app_url)
+    button = telebot.types.InlineKeyboardButton(text="BUTTON NAME", web_app=web_app)
+    keyboard.add(button)
+
+    # Send an image from a URL before sending the button
+    try:
+        bot.send_photo(user_id, 
+                       'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg2GKCo9qjSqcqMFOVgZkqGHUZzlJ7ptfueDmQnRcxKGyRVh1F0XM5kGGXniQJPczgA-4y3sUdV8v9L2f-GrmZH_QghsuCJeKnPTLiFbYm7OWA6WmOYr68pLKUX2PfG3Rs9uPx2HcZuJv3VnRXJQPdLTnHxQwxqUXworB2T5r_1Mi1fr_AuIvnUSb8co01A/s3264/20241207_103743~2.jpg', 
+                       caption="Welcome! Click below to access the TOPIC tool.")
+    except Exception as e:
+        bot.send_message(user_id, f"Error sending image: {e}")
+
+    # Send the message with the button
+    bot.send_message(
+        user_id, 
+        "Click to get your YOUR TOOL NAME - tool.\nThis bot is developed by @YourUsername.",
+        reply_markup=keyboard
+    )
+    
+    # Mark user as interacted
+    save_interacted_user(user_id)
+
+# Start the bot
+bot.polling()
